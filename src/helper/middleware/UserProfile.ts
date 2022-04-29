@@ -3,10 +3,6 @@ import { SessionConfig } from '../../config/SessionConfig';
 import { UserSession } from '../../model/UserSession';
 import { User } from '../../model/user/entities/user.entity';
 import { Department } from '../../model/department/entities/department.entity';
-import { UserService } from '../../model/user/service/user.service';
-import { UserServiceImpl } from '../../model/user/service/user.service.impl';
-import { DepartmentService } from '../../model/department/service/department.service';
-import { DepartmentServiceImpl } from '../../model/department/service/department.service.impl';
 import { LoginMaxAttemptException } from '../../model/error/LoginMaxAttemptException';
 
 export class UserProfile {
@@ -23,52 +19,6 @@ export class UserProfile {
       req.validationErrors.addError('You need to sign in before you can perform an action');
       return res.render('pages/distinct/authentication/sign-in');
     }
-  }
-
-  public static async checkUsernameAndEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
-    let userService: UserService = new UserServiceImpl();
-    let msgList: string[] = [];
-    if (req.validationErrors.isEmpty()) {
-      try {
-        await userService.checkUsername((<User>req.bindingModel).getUsername()) ? msgList.push("Username already exists and cannot be used.") : void 0;
-        if (msgList.length <= 0) await userService.checkEmailAddress((<User>req.bindingModel).getEmailAddress()) ? msgList.push("Email Address already exists and cannot be used.") : void 0;
-      }
-      catch (err: any) { throw new Error("Error has occured."); }
-    }
-    req.validationErrors.addManyError(msgList);
-    return next();
-  }
-
-  public static async checkMatricNumber(req: Request, res: Response, next: NextFunction): Promise<void> {
-    let userService: UserService = new UserServiceImpl();
-    let msgList: string[] = [];
-    if (req.validationErrors.isEmpty()) {
-      try { if (msgList.length <= 0) (await userService.checkMatricNumber((<User>req.bindingModel).getMatriculationNumber())) ? msgList.push("Matriculation Number already exists and cannot be used.") : void 0; }
-      catch (err: any) { throw new Error("Error has occured."); }
-    }
-    req.validationErrors.addManyError(msgList);
-    return next();
-  }
-
-  public static async verifyDepartmentAndFaculty(req: Request, res: Response, next: NextFunction): Promise<void> {
-    let departmentService: DepartmentService = new DepartmentServiceImpl();
-    let user: any | null = <any>req.bindingModel;
-    let msgList: string[] = [];
-    let department: Department | null = null;
-    let departmentId: number = +(<any>req.bindingModel).getDepartmentId();
-
-    if (req.validationErrors.isEmpty()) {
-      try {
-        departmentId ? void 0 : msgList.push("Invalid Department Identity Number.");
-        if (departmentId > 0) department = await departmentService.verifyDepartment(departmentId);
-
-        if (department !== null && +(department!.getFacultyId()) !== +(user!.getFacultyId())) { msgList.push("Department does not belong to the choosen faculty."); }
-        else if (department === null) { msgList.push("Department does not exists and cannot be used."); }
-      }
-      catch (err: any) { throw new Error("Error has occured."); }
-    }
-    req.validationErrors.addManyError(msgList);
-    return next();
   }
 
   public static noAuthentication(req: Request, res: Response, next: NextFunction): void {

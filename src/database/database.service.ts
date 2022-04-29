@@ -27,7 +27,7 @@ export class DatabaseService {
       'password': this.eProps.getDatabasePassword(),
       'synchronize': true,
       'logging': true,
-      "entities": [join(__dirname, '../model/**/*{.ts,.js}'), Country, User, UserSignature, UserProfilePhoto, Role, UserRole, UserStatus, Department, Faculty, Level],
+      "entities": [join(__dirname, '../model/**/*{.ts,.js}')],
       'entitySkipConstructor': true,
       'dropSchema': false,
       'cache': false,

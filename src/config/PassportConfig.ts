@@ -1,16 +1,12 @@
 import { Request } from 'express';
 import { Strategy } from 'passport-local';
 import { PassportStatic } from 'passport';
-import { AuthenticationService } from '../model/authentication/service/authentication.service';
-import { AuthenticationServiceImpl } from '../model/authentication/service/authentication.service.impl';
 import { UserHelper } from '../helper/entry/UserHelper';
 import { UserSession } from '../model/UserSession';
 import { User } from '../model/user/entities/user.entity';
 import { Role } from '../model/role/entities/role.entity';
 
 export class PassportConfig {
-
-  private static service: AuthenticationService = new AuthenticationServiceImpl();
 
   public static init(passport: PassportStatic): void {
     passport.serializeUser(function(user: Express.User, done: Function) {
@@ -30,24 +26,7 @@ export class PassportConfig {
     },
 
       async function(req: Request, emailAddress: string, password: string, done: Function) {
-        let user: User | null = <User>req.bindingModel;
-        let emailAddressExists: boolean = await PassportConfig.service.existsEmailAddress(user.getEmailAddress());
 
-        if (emailAddressExists === true) { return done(null, false, { 'message': "Email address already exists in the record and so cannot be used." }); }
-        let usernameExists: boolean = await PassportConfig.service.existsUsername(user.getUsername());
-        if (usernameExists === true) { return done(null, false, { 'message': "Username already exists in the record and so cannot be used." }); }
-
-        UserHelper.setPassword(user);
-        user = await PassportConfig.service.save(user);
-
-        let result: any = await PassportConfig.service.saveRole(<User>user);
-        let roles: Role[] = await PassportConfig.service.findUserSessionRole((<User>user).getId());
-        let userRolesArr: string[] = UserHelper.getUserRoles(roles);
-        let userStatus: string | null = await PassportConfig.service.findUserStatus((<User>user).getId());
-        let userSession = new UserSession(user);
-        userSession.setRole(userRolesArr);
-        userSession.setStatus(<string>userStatus);
-        return done(null, userSession);
       }));
   }
 
@@ -58,21 +37,7 @@ export class PassportConfig {
     },
 
       async function(emailAddress: string, password: string, done: Function) {
-        let user: User | null = await PassportConfig.service.existsLoginDetails(emailAddress);
-        let userRolesArr: string[] = [];
-        if (user === null) { return done(null, false, { 'message': "The credential received cannot be recognized or does not exists in the record." }); }
-        userRolesArr = UserHelper.getUserRoles((<User>user).getRoles());
-        let userStatus: string = UserHelper.getUserStatus((<User>user).getStatus());
-        let userSession = new UserSession(user);
-        userSession.setRole(userRolesArr);
-        userSession.setStatus(userStatus);
 
-        if (UserHelper.validPassword(password, userSession) === false) {
-          return done(null, false, { 'message': "The credential received cannot be recognized or does not exists in the record." }); }
-        else {
-          userSession.deleteConfidentialKeys();
-          return done(null, userSession);
-        }
       }));
   }
 

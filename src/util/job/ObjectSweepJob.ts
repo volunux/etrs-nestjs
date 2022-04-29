@@ -5,15 +5,12 @@ import SimpleLogger from '../../util/other/Logger';
 import { Logger , Profiler } from 'winston';
 import { JobRunner } from './JobRunner';
 import { ObjectSweep } from '../../model/object-sweep/entities/object-sweep.entity';
-import { ObjectSweepRepository } from '../../model/object-sweep/repository/object-sweep.repository';
-import { ObjectSweepRepositoryImpl } from '../../model/object-sweep/repository/object-sweep.repository.impl';
 
 aws.config.update(FileConfigurerImpl.getInstance().getConfiguration());
 
 export class ObjectSweepJob implements JobRunner {
 
   private static instance : ObjectSweepJob;
-  private repository : ObjectSweepRepository = new ObjectSweepRepositoryImpl();
   private readonly logger : Logger = SimpleLogger.getLogger().child({'component' : ObjectSweepJob.name});
   private s3 : aws.S3 = new aws.S3();
 
@@ -23,22 +20,7 @@ export class ObjectSweepJob implements JobRunner {
     return ObjectSweepJob.instance; }
 
   public async execute() : Promise<void> {
-    let context : ObjectSweepJob = this;
-    let s3Context : aws.S3 = this.s3;
-    const profiler : Profiler = this.logger.startTimer();
-    cron.scheduleJob('* */59 */23 * * *' , async function() {
-     let entries : ObjectSweep[] = await context.repository.findAll(null);
-     for (let entry of entries) {
-        try {
-          let params : aws.S3.HeadObjectRequest | aws.S3.DeleteObjectRequest = {'Bucket' : entry.getBucketName() , 'Key' : entry.getKey()};
-          let details : aws.S3.HeadObjectOutput = await context.s3.headObject(params).promise();
 
-          if (details) { let details2 : aws.S3.DeleteObjectOutput = await s3Context.deleteObject(params).promise(); 
-          context.repository.remove(entry.getKey()); } }
-        catch(err : any) { let awsErr : AWSError = err;
-          if (awsErr.statusCode === 404) context.logger.error('AWS S3 File Not Found'); } 
-        finally { profiler.done('Execution completed'); }
-     } });
   }
 
 }
